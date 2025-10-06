@@ -306,8 +306,10 @@ void onTouchDown(void* thisptr, SCallbackInfo& info, std::any args) {
 
 void onTouchMove(void* thisptr, SCallbackInfo& info, std::any args) {
     if (g_pTouchedMonitor == nullptr) return;
-
+    const auto widget = getWidgetForMonitor(g_pTouchedMonitor);
     const auto e = std::any_cast<ITouch::SMotionEvent>(args);
+    if (widget != nullptr)
+        info.cancelled = !widget->updateTouch(e);
     g_pCompositor->warpCursorTo(g_pTouchedMonitor->m_position + g_pTouchedMonitor->m_size * e.pos);
     g_pInputManager->simulateMouseMovement();
 }

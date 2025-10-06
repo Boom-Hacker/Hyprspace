@@ -1,5 +1,6 @@
 #include "Overview.hpp"
 #include "Globals.hpp"
+#include <cstdlib>
 
 bool CHyprspaceWidget::buttonEvent(bool pressed, Vector2D coords) {
     bool Return;
@@ -76,14 +77,13 @@ bool CHyprspaceWidget::buttonEvent(bool pressed, Vector2D coords) {
 }
 
 bool CHyprspaceWidget::axisEvent(double delta, Vector2D coords) {
-
     const auto owner = getOwner();
     CBox widgetBox = {owner->m_position.x, owner->m_position.y - curYOffset->value(), owner->m_transformedSize.x, (Config::panelHeight + Config::reservedArea) * owner->m_scale};
     if (Config::onBottom) widgetBox = {owner->m_position.x, owner->m_position.y + owner->m_transformedSize.y - ((Config::panelHeight + Config::reservedArea) * owner->m_scale) + curYOffset->value(), owner->m_transformedSize.x, (Config::panelHeight + Config::reservedArea) * owner->m_scale};
 
     // scroll through panel if cursor is on it
     if (widgetBox.containsPoint(coords * getOwner()->m_scale)) {
-        *workspaceScrollOffset = workspaceScrollOffset->goal() - delta * 2;
+        *workspaceScrollOffset = workspaceScrollOffset->goal()-200;
     }
     // otherwise, scroll to switch active workspace
     else {
@@ -206,4 +206,37 @@ bool CHyprspaceWidget::endSwipe(IPointer::SSwipeEndEvent e) {
     avgSwipeSpeed = 0;
     swipePoints = 0;
     return false;
+}
+
+bool CHyprspaceWidget::updateTouch(ITouch::SMotionEvent e) {
+    // restrict swipe to a axis with the most significant movement to prevent misinput
+    auto touchxpos_old = touchxpos;
+    touchxpos = e.pos.x;
+    auto delta = touchxpos - touchxpos_old;
+    std::string Xstr = std::to_string(delta);
+    std::string command = "toastify send " + Xstr + " &";
+    if (delta < 0){
+        system(command.c_str());
+    }
+    
+
+    workspaceScrollOffset->setValueAndWarp(workspaceScrollOffset->goal() + delta * 1000);
+
+    /*if (abs(e.delta.x) / abs(e.delta.y) < 1) {
+    }
+    else {
+        // scroll through panel
+        if (e.fingers == (uint32_t)fingers && active) {
+            const auto owner = getOwner();
+            CBox widgetBox = {owner->m_position.x, owner->m_position.y - curYOffset->value(), owner->m_transformedSize.x, (Config::panelHeight + Config::reservedArea) * owner->m_scale};
+            if (Config::onBottom) widgetBox = {owner->m_position.x, owner->m_position.y + owner->m_transformedSize.y - ((Config::panelHeight + Config::reservedArea) * owner->m_scale) + curYOffset->value(), owner->m_transformedSize.x, (Config::panelHeight + Config::reservedArea) * owner->m_scale};
+            if (widgetBox.containsPoint(g_pInputManager->getMouseCoordsInternal() * getOwner()->m_scale)) {
+                workspaceScrollOffset->setValueAndWarp(workspaceScrollOffset->goal() + e.delta.x * 2);
+                return false;
+            }
+        }
+    }*/
+
+    // otherwise, do not cancel the event and perform workspace swipe normally
+    return true;
 }
