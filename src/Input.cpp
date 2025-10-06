@@ -366,8 +366,9 @@ bool CHyprspaceWidget::endSwipe(IPointer::SSwipeEndEvent e) {
 
 bool CHyprspaceWidget::updateTouch(ITouch::SMotionEvent e) {
     // restrict swipe to a axis with the most significant movement to prevent misinput
-    auto touchxpos_old = touchxpos;
-    touchxpos = e.pos.x;
+    if (e.pos.y < 0.3){
+        auto touchxpos_old = touchxpos;
+    touchxpos = e.pos.x * 1920.;
     auto delta = touchxpos - touchxpos_old;
     std::string Xstr = std::to_string(delta);
     std::string command = "toastify send " + Xstr + " &";
@@ -376,7 +377,9 @@ bool CHyprspaceWidget::updateTouch(ITouch::SMotionEvent e) {
     }
     
 
-    workspaceScrollOffset->setValueAndWarp(workspaceScrollOffset->goal() + delta * 300);
+        workspaceScrollOffset->setValueAndWarp(workspaceScrollOffset->goal() + delta);
+    }
+    
 
     /*if (abs(e.delta.x) / abs(e.delta.y) < 1) {
     }
