@@ -82,7 +82,7 @@ bool CHyprspaceWidget::onTouchDownbuttonEvent(bool pressed, Vector2D coords) {
     bool Return;
 
     //touchxpos = workspaceScrollOffset->goal();
-    //touchxpos = coords.x;
+    touchxpos = coords.x; //anti rollback !!!!!!!
 
     const auto targetWindow = g_pInputManager->m_currentlyDraggedWindow.lock();
 
@@ -157,10 +157,7 @@ bool CHyprspaceWidget::onTouchDownbuttonEvent(bool pressed, Vector2D coords) {
 
 bool CHyprspaceWidget::onTouchUpbuttonEvent(bool pressed, Vector2D coords) {
     bool Return;
-
-    touchxpos = workspaceScrollOffset->goal();
     //touchxpos = coords.x;
-
     const auto targetWindow = g_pInputManager->m_currentlyDraggedWindow.lock();
 
     // this is for click to exit, we set a timeout for button release
@@ -370,14 +367,15 @@ bool CHyprspaceWidget::updateTouch(ITouch::SMotionEvent e) {
         auto touchxpos_old = touchxpos;
     touchxpos = e.pos.x * 1920.;
     auto delta = touchxpos - touchxpos_old;
-    std::string Xstr = std::to_string(delta);
-    std::string command = "toastify send " + Xstr + " &";
-    if (delta < 0){
-        system(command.c_str());
-    }
+    // std::string Xstr = std::to_string(delta);
+    // std::string command = "toastify send " + Xstr + " &";
+    // if (delta < 0){
+    //     system(command.c_str());
+    // }
     
 
-        workspaceScrollOffset->setValueAndWarp(workspaceScrollOffset->goal() + delta);
+        //workspaceScrollOffset->setValueAndWarp(workspaceScrollOffset->goal() + delta);
+        *workspaceScrollOffset = workspaceScrollOffset->goal() + delta * 2;
     }
     
 
