@@ -62,6 +62,8 @@ public:
     void updateLayout();
 
     bool buttonEvent(bool, Vector2D coords);
+    bool onTouchDownbuttonEvent(bool, Vector2D coords);
+    bool onTouchUpbuttonEvent(bool, Vector2D coords);
     bool axisEvent(double, Vector2D coords);
 
     bool isSwiping();

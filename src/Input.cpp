@@ -5,6 +5,162 @@
 bool CHyprspaceWidget::buttonEvent(bool pressed, Vector2D coords) {
     bool Return;
 
+    //touchxpos = workspaceScrollOffset->goal();
+
+    const auto targetWindow = g_pInputManager->m_currentlyDraggedWindow.lock();
+
+    // this is for click to exit, we set a timeout for button release
+    bool couldExit = false;
+    if (pressed)
+        lastPressedTime = std::chrono::high_resolution_clock::now();
+    else
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - lastPressedTime).count() < 200)
+            couldExit = true;
+
+    int targetWorkspaceID = SPECIAL_WORKSPACE_START - 1;
+
+    // find which workspace the mouse hovers over
+    for (auto& w : workspaceBoxes) {
+        auto wi = std::get<0>(w);
+        auto wb = std::get<1>(w);
+        if (wb.containsPoint(coords)) {
+            targetWorkspaceID = wi;
+            break;
+        }
+    }
+
+    auto targetWorkspace = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
+
+    // create new workspace
+    if (targetWorkspace == nullptr && targetWorkspaceID >= SPECIAL_WORKSPACE_START) {
+        targetWorkspace = g_pCompositor->createNewWorkspace(targetWorkspaceID, getOwner()->m_id);
+    }
+
+    // if the cursor is hovering over workspace, clicking should switch workspace instead of starting window drag
+    if (Config::autoDrag && (targetWorkspace == nullptr || !pressed)) {
+        // when overview is active, always drag windows on mouse click
+        if (const auto curWindow = g_pInputManager->m_currentlyDraggedWindow.lock()) {
+            g_pLayoutManager->getCurrentLayout()->onEndDragWindow();
+            g_pInputManager->m_currentlyDraggedWindow.reset();
+            g_pInputManager->m_dragMode = MBIND_INVALID;
+        }
+        std::string keybind = (pressed ? "1" : "0") + std::string("movewindow");
+        (*(tMouseKeybind)pMouseKeybind)(keybind);
+    }
+    Return = false;
+
+    // release window on workspace to drop it in
+    if (targetWindow && targetWorkspace != nullptr && !pressed) {
+        g_pCompositor->moveWindowToWorkspaceSafe(targetWindow, targetWorkspace);
+        if (targetWindow->m_isFloating) {
+            auto targetPos = getOwner()->m_position + (getOwner()->m_size / 2.) - (targetWindow->m_reportedSize / 2.);
+            targetWindow->m_position = targetPos;
+            *targetWindow->m_realPosition = targetPos;
+        }
+        if (Config::switchOnDrop) {
+            g_pCompositor->getMonitorFromID(targetWorkspace->m_monitor->m_id)->changeWorkspace(targetWorkspace->m_id);
+            if (Config::exitOnSwitch && active) hide();
+        }
+        updateLayout();
+    }
+    // click workspace to change to workspace and exit overview
+    else if (targetWorkspace && !pressed) {
+        if (targetWorkspace->m_isSpecialWorkspace)
+            getOwner()->activeSpecialWorkspaceID() == targetWorkspaceID ? getOwner()->setSpecialWorkspace(nullptr) : getOwner()->setSpecialWorkspace(targetWorkspaceID);
+        else {
+            g_pCompositor->getMonitorFromID(targetWorkspace->m_monitor->m_id)->changeWorkspace(targetWorkspace->m_id);
+        }
+        if (Config::exitOnSwitch && active) hide();
+    }
+    // click elsewhere to exit overview
+    else if (Config::exitOnClick && targetWorkspace == nullptr && active && couldExit && !pressed) hide();
+
+    return Return;
+}
+
+bool CHyprspaceWidget::onTouchDownbuttonEvent(bool pressed, Vector2D coords) {
+    bool Return;
+
+    //touchxpos = workspaceScrollOffset->goal();
+    //touchxpos = coords.x;
+
+    const auto targetWindow = g_pInputManager->m_currentlyDraggedWindow.lock();
+
+    // this is for click to exit, we set a timeout for button release
+    bool couldExit = false;
+    if (pressed)
+        lastPressedTime = std::chrono::high_resolution_clock::now();
+    else
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - lastPressedTime).count() < 200)
+            couldExit = true;
+
+    int targetWorkspaceID = SPECIAL_WORKSPACE_START - 1;
+
+    // find which workspace the mouse hovers over
+    for (auto& w : workspaceBoxes) {
+        auto wi = std::get<0>(w);
+        auto wb = std::get<1>(w);
+        if (wb.containsPoint(coords)) {
+            targetWorkspaceID = wi;
+            break;
+        }
+    }
+
+    auto targetWorkspace = g_pCompositor->getWorkspaceByID(targetWorkspaceID);
+
+    // create new workspace
+    if (targetWorkspace == nullptr && targetWorkspaceID >= SPECIAL_WORKSPACE_START) {
+        targetWorkspace = g_pCompositor->createNewWorkspace(targetWorkspaceID, getOwner()->m_id);
+    }
+
+    // if the cursor is hovering over workspace, clicking should switch workspace instead of starting window drag
+    if (Config::autoDrag && (targetWorkspace == nullptr || !pressed)) {
+        // when overview is active, always drag windows on mouse click
+        if (const auto curWindow = g_pInputManager->m_currentlyDraggedWindow.lock()) {
+            g_pLayoutManager->getCurrentLayout()->onEndDragWindow();
+            g_pInputManager->m_currentlyDraggedWindow.reset();
+            g_pInputManager->m_dragMode = MBIND_INVALID;
+        }
+        std::string keybind = (pressed ? "1" : "0") + std::string("movewindow");
+        (*(tMouseKeybind)pMouseKeybind)(keybind);
+    }
+    Return = false;
+
+    // release window on workspace to drop it in
+    if (targetWindow && targetWorkspace != nullptr && !pressed) {
+        g_pCompositor->moveWindowToWorkspaceSafe(targetWindow, targetWorkspace);
+        if (targetWindow->m_isFloating) {
+            auto targetPos = getOwner()->m_position + (getOwner()->m_size / 2.) - (targetWindow->m_reportedSize / 2.);
+            targetWindow->m_position = targetPos;
+            *targetWindow->m_realPosition = targetPos;
+        }
+        if (Config::switchOnDrop) {
+            g_pCompositor->getMonitorFromID(targetWorkspace->m_monitor->m_id)->changeWorkspace(targetWorkspace->m_id);
+            if (Config::exitOnSwitch && active) hide();
+        }
+        updateLayout();
+    }
+    // click workspace to change to workspace and exit overview
+    else if (targetWorkspace && !pressed) {
+        if (targetWorkspace->m_isSpecialWorkspace)
+            getOwner()->activeSpecialWorkspaceID() == targetWorkspaceID ? getOwner()->setSpecialWorkspace(nullptr) : getOwner()->setSpecialWorkspace(targetWorkspaceID);
+        else {
+            g_pCompositor->getMonitorFromID(targetWorkspace->m_monitor->m_id)->changeWorkspace(targetWorkspace->m_id);
+        }
+        if (Config::exitOnSwitch && active) hide();
+    }
+    // click elsewhere to exit overview
+    else if (Config::exitOnClick && targetWorkspace == nullptr && active && couldExit && !pressed) hide();
+
+    return Return;
+}
+
+bool CHyprspaceWidget::onTouchUpbuttonEvent(bool pressed, Vector2D coords) {
+    bool Return;
+
+    touchxpos = workspaceScrollOffset->goal();
+    //touchxpos = coords.x;
+
     const auto targetWindow = g_pInputManager->m_currentlyDraggedWindow.lock();
 
     // this is for click to exit, we set a timeout for button release
@@ -220,7 +376,7 @@ bool CHyprspaceWidget::updateTouch(ITouch::SMotionEvent e) {
     }
     
 
-    workspaceScrollOffset->setValueAndWarp(workspaceScrollOffset->goal() + delta * 1000);
+    workspaceScrollOffset->setValueAndWarp(workspaceScrollOffset->goal() + delta * 300);
 
     /*if (abs(e.delta.x) / abs(e.delta.y) < 1) {
     }

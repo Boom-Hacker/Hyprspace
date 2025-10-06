@@ -294,7 +294,7 @@ void onTouchDown(void* thisptr, SCallbackInfo& info, std::any args) {
     if (widget != nullptr && targetMonitor != nullptr) {
         if (widget->isActive()) {
             Vector2D pos = targetMonitor->m_position + e.pos * targetMonitor->m_size;
-            info.cancelled = !widget->buttonEvent(true, pos);
+            info.cancelled = !widget->onTouchDownbuttonEvent(true, pos);
             if (info.cancelled) {
                 g_pTouchedMonitor = targetMonitor;
                 g_pCompositor->warpCursorTo(pos);
@@ -318,7 +318,7 @@ void onTouchUp(void* thisptr, SCallbackInfo& info, std::any args) {
     const auto widget = getWidgetForMonitor(g_pTouchedMonitor);
     if (widget != nullptr && g_pTouchedMonitor != nullptr)
         if (widget->isActive())
-            info.cancelled = !widget->buttonEvent(false, g_pInputManager->getMouseCoordsInternal());
+            info.cancelled = !widget->onTouchUpbuttonEvent(false, g_pInputManager->getMouseCoordsInternal());
 
     g_pTouchedMonitor = nullptr;
 }
